@@ -20,13 +20,15 @@ async fn main() {
     let a = circuit.add_gate(GateType::Input, None, None, Some(0));
     let b = circuit.add_gate(GateType::Input, None, None, Some(1));
     let c = circuit.add_gate(GateType::Input, None, None, Some(2));
+    let d = circuit.add_gate(GateType::Input, None, None, Some(3));
 
-    let sum = circuit.add_gate(GateType::Mul, Some(a), Some(b), None);
-    let mul = circuit.add_gate(GateType::Mul, Some(sum), Some(c), None);
-    let out = circuit.add_gate(GateType::Output, Some(mul), None, None);
+    let mul1 = circuit.add_gate(GateType::Mul, Some(a), Some(b), None);
+    let mul2 = circuit.add_gate(GateType::Mul, Some(c), Some(d), None);
+    let product = circuit.add_gate(GateType::Add, Some(mul1), Some(mul2), None);
+    let out = circuit.add_gate(GateType::Output, Some(product), None, None);
 
     // Inputs: party 0 = 2, party 1 = 3, party 2 = 4
-    let inputs: Vec<Fr> = vec![Fr::from(2u64), Fr::from(3u64), Fr::from(4u64)];
+    let inputs: Vec<Fr> = vec![Fr::from(2u64), Fr::from(3u64), Fr::from(4u64), Fr::from(5u64)];
 
     println!("Inputs:");
     println!("Party 0: a = {}", inputs[0]);

@@ -17,16 +17,43 @@ async fn main() {
     // Build circuit: (a + b) * c
     let mut circuit = Circuit::new();
 
+    // Inputs from parties 0..4
     let a = circuit.add_gate(GateType::Input, None, None, Some(0));
     let b = circuit.add_gate(GateType::Input, None, None, Some(1));
     let c = circuit.add_gate(GateType::Input, None, None, Some(2));
+    let d = circuit.add_gate(GateType::Input, None, None, Some(3));
+    let e = circuit.add_gate(GateType::Input, None, None, Some(4));
 
-    let sum = circuit.add_gate(GateType::Add, Some(a), Some(b), None);
-    let mul = circuit.add_gate(GateType::Mul, Some(sum), Some(c), None);
-    let out = circuit.add_gate(GateType::Output, Some(mul), None, None);
+    // Const mul gates
+    let two = circuit.add_gate(GateType::ConstMul(Fr::from(2u64)), Some(b), None, None);
+    let three = circuit.add_gate(GateType::ConstMul(Fr::from(3u64)), Some(c), None, None);
+
+    // (a + 2*b)
+    let sum1 = circuit.add_gate(GateType::Add, Some(a), Some(two), None);
+    // (c + 3)
+    let sum2 = circuit.add_gate(GateType::Add, Some(c), Some(three), None);
+
+    // (a + 2*b) * (c + 3)
+    let mul1 = circuit.add_gate(GateType::Mul, Some(sum1), Some(sum2), None);
+
+    // d * e
+    let mul2 = circuit.add_gate(GateType::Mul, Some(d), Some(e), None);
+
+    // final addition: ((a + 2*b)*(c + 3)) + (d * e)
+    let final_sum = circuit.add_gate(GateType::Add, Some(mul1), Some(mul2), None);
+
+    // output
+    let out = circuit.add_gate(GateType::Output, Some(final_sum), None, None);
+
 
     // Inputs: party 0 = 2, party 1 = 3, party 2 = 4
-    let inputs: Vec<Fr> = vec![Fr::from(2u64), Fr::from(3u64), Fr::from(4u64)];
+    let inputs: Vec<Fr> = vec![
+        Fr::from(2u64), // a (party 0)
+        Fr::from(3u64), // b (party 1)
+        Fr::from(4u64), // c (party 2)
+        Fr::from(5u64), // d (party 3)
+        Fr::from(6u64), // e (party 4)
+    ];
 
     println!("Inputs:");
     println!("Party 0: a = {}", inputs[0]);
@@ -74,7 +101,7 @@ async fn main() {
         let mut tx_map = party_txs[pid].clone();
         let barrier = barrier.clone();
 
-        let inputs_map = if pid < 3 {
+        let inputs_map = if pid < inputs.len() {
             let mut map = HashMap::new();
             let wire_id = circuit.input_wires_by_owner(pid)[0];
             map.insert(wire_id, inputs[pid]);
